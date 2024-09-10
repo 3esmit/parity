@@ -406,7 +406,7 @@ contract Wallet is WalletEvents {
     // plus 2 32bytes for each uint
     uint argarraysize = (2 + _owners.length);
     uint argsize = (2 + argarraysize) * 32;
-
+    bool ret;
     assembly {
       // Add the signature first to memory
       mstore(0x0, sig)
@@ -414,8 +414,9 @@ contract Wallet is WalletEvents {
       // code
       codecopy(0x4,  sub(codesize, argsize), argsize)
       // Delegate call to the library
-      delegatecall(sub(gas, 10000), target, 0x0, add(argsize, 0x4), 0x0, 0x0)
+      ret := delegatecall(sub(gas, 10000), target, 0x0, add(argsize, 0x4), 0x0, 0x0)
     }
+    if (!ret) throw;
   }
 
   // METHODS
@@ -426,7 +427,7 @@ contract Wallet is WalletEvents {
     if (msg.value > 0)
       Deposit(msg.sender, msg.value);
     else if (msg.data.length > 0)
-      _walletLibrary.delegatecall(msg.data);
+      if(!_walletLibrary.delegatecall(msg.data)) throw;
   }
 
   // Gets an owner by 0-indexed position (using numOwners as the count)
